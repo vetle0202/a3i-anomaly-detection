@@ -45,3 +45,10 @@ them. Needs a proper look before we commit.
   windows, notably mid-May. Unreported leaks, or false positives? We cannot tell, and
   that is itself the argument for calibrating the threshold against cost.
 - Does a detector trained on one Kelmarsh turbine work on the other five?
+
+## Noted while exploring
+
+**February-only baseline makes z-scores explode.** `DV_pressure` is almost constant
+in February, so its baseline standard deviation is near zero and the scaled values
+reach 140. Fine for reading the shape of a plot, useless as a detector. Whatever we
+use for scaling in notebook 2 needs to handle a near-constant baseline.
