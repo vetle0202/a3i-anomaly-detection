@@ -35,10 +35,61 @@ exploration shows TP2, DV_pressure and oil temperature all shifting character ar
 1 March, so February and March are not the same regime. Training on both would mix
 them. Needs a proper look before we commit.
 
+## Alarms, evaluation and cost
+
+Code in `util/evaluation.py`, demonstrated in notebook 3.
+
+**Cost of a false alarm = 1, cost of a missed failure = 20.** We do not know what
+Metro do Porto pays, so we work in units of one false alarm. A false alarm means a
+technician inspects the train at the depot and finds nothing: a few hours of labour,
+perhaps one service run with a spare train. A missed leak means the train is withdrawn
+unplanned in service, passengers are disrupted, and the compressor runs under strain
+until someone notices, which can turn a seal replacement into a compressor repair.
+A factor of 20 between those is a deliberately moderate guess. Rejected: putting euro
+figures on it, which would look precise without being any more justified.
+
+**The ratio decides one thing, so we show it rather than defend one number.** On the
+synthetic series in notebook 3, the chosen threshold is the same for any ratio from
+7 up to 100, and only moves when a miss costs less than 7 false alarms (it then lets
+the weakest failure go, because catching it costs 7 extra false alarms). So the claim we have to defend is "a missed
+failure costs more than a handful of inspections", which is easy, not "exactly 20",
+which is not. Re-run the sensitivity plot on real scores before trusting this.
+
+**Merge alarms with a 6-hour refractory period.** After an alarm, further crossings
+within 6 hours are the same event. Otherwise one sustained excursion at 10-minute
+resolution counts as dozens of alarms. If the score is still high after 6 hours, a
+new alarm fires and counts again, because in practice a technician would be sent
+again. 6 hours is roughly a shift. Rejected: merging whole contiguous excursions into
+one alarm, which makes a score stuck above threshold for a week cost the same as a
+single blip, and makes very low thresholds look cheap.
+
+**An alarm up to 2 days before a failure counts as detecting it — provisional.**
+Notebook 1 shows precursor spikes a day or two before F1 and F3, so 2 days is the
+shortest window that would credit them. It is a parameter (`lead=`) so we can change
+it once we answer the open question below. Earlier alarms count as false.
+
+**Choose the threshold at, or a little below, the minimum of the cost curve.** The
+curve is lopsided: below the minimum cost rises one false alarm at a time, above it
+cost jumps by a whole missed failure. Erring low is therefore cheap and erring high is
+not, and a lower threshold also gives more warning time. Ties go to the lowest
+threshold for the same reason.
+
+**Lead time is reported but not priced.** The cost model treats an alarm two minutes
+before a failure the same as one a day before, though industrially the second is worth
+far more. We report warning time per failure next to the cost rather than invent a
+price curve for it. Possible extension if time allows: a missed-failure cost that is
+reduced in proportion to the warning given.
+
+**Synthetic test scores use Student's t noise (4 df), not Gaussian.** With Gaussian
+noise false alarms disappear abruptly above about 4 sigma and every cost ratio picks
+the same threshold, which makes the problem look easier than real scores will be.
+Heavy tails are a closer stand-in for what a KDE or autoencoder produces.
+
 ## Open questions
 
 - How long before a reported failure counts as anomalous? This is the single choice
   we will be asked about most. Decide it deliberately and write down the reasoning.
+  Currently 2 days, provisionally (see `lead=` above).
 - The fourth MetroPT failure (15 July) shows no DV_pressure signature at all, only a
   slow rise in oil temperature. Different failure mode, or a mislabelled window?
 - There are excursions as large as the labelled failures outside the reported
