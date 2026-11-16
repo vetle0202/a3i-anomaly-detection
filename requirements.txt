@@ -1,5 +1,9 @@
-notebook
-pandas
-scikit-learn
-matplotlib
-tensorflow
+# Same versions as the course lecture repos, so our results match theirs.
+notebook==7.6.3
+pandas==3.0.6
+scikit-learn==1.9.1
+matplotlib==3.11.2
+
+# Only needed from notebook 4 onwards (the autoencoder).
+tensorflow==2.21.0
+keras==3.15.1

@@ -78,3 +78,10 @@ DECISIONS.md why we chose what we chose — keep this current
 Read it before you change anything, and add to it as you go. "Your ability to
 motivate your choices" is one of four grading criteria, and in December nobody
 remembers why the window ended up at 60 minutes.
+
+## Note on the virtual environment
+
+Do not put `.venv` inside the OneDrive folder. It is tens of thousands of small
+files and OneDrive will sync every one of them, which makes installing packages
+painfully slow. Keep it somewhere local, for example `C:\dev\a3i\.venv`, and point
+VS Code at it.
