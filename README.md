@@ -51,7 +51,9 @@ Three things that will waste your afternoon otherwise:
 
 - Each CSV has **9 comment lines** before the header. Use `skiprows=9`.
 - The timestamp column is named `# Date and time`, hash and space included.
-- The files are **not UTF-8**. Pass `encoding='latin-1'` or the degree signs break.
+- The files are UTF-8 (the default). Do not pass `encoding='latin-1'`: it turns every
+  `°C` into `Â°C` and the column names stop matching.
+- In the status log, open events have `-` as end time. Pass `na_values='-'`.
 
 Of the 299 columns, 105 have more than 90 % coverage. The ones we care about —
 bearing temperatures, power, wind speed — are around 98.8 % complete.
