@@ -35,32 +35,6 @@ exploration shows TP2, DV_pressure and oil temperature all shifting character ar
 1 March, so February and March are not the same regime. Training on both would mix
 them. Needs a proper look before we commit.
 
-## Kelmarsh labels
-
-Code in notebook 2.
-
-**Failure label = IEC category "Forced outage", both Stop and Warning lines.**
-Forced outage is the IEC availability category for unplanned stops caused by a
-fault. Scheduled maintenance and low-wind stops are excluded. We keep the Warning
-lines because in almost all of them the turbine produces zero power for the whole
-duration. Rejected: using `Status == 'Stop'` alone, which would drop real outages.
-
-**Merge overlapping log lines into one event.** One fault writes several lines at
-once (fan 1, 2 and 3 overloaded within seconds). Lines that overlap in time on the
-same turbine become one event. 176 lines become 141 events across the farm.
-Rejected: counting lines, which inflates the number of failures.
-
-**Duration = end − start, not the `Duration` column.** The file writes durations
-above 24 h as `548:13:20`, which pandas cannot parse.
-
-**Read the CSVs as UTF-8.** The README said latin-1, but this archive is UTF-8:
-with latin-1 every `°C` becomes `Â°C` and the column names no longer match.
-
-**Judge bearing temperature against power, not on its own.** Front and rear bearing
-sit at 70–75 °C under load and fall towards outdoor temperature at standstill, so
-raw temperature mostly tells us how windy it was. Whatever detector we build needs
-power (and probably wind speed) as an input alongside temperature.
-
 ## Alarms, evaluation and cost
 
 Code in `util/evaluation.py`, demonstrated in notebook 3.
@@ -122,14 +96,6 @@ Heavy tails are a closer stand-in for what a KDE or autoencoder produces.
   windows, notably mid-May. Unreported leaks, or false positives? We cannot tell, and
   that is itself the argument for calibrating the threshold against cost.
 - Does a detector trained on one Kelmarsh turbine work on the other five?
-- Most Kelmarsh forced outages are protective stops (tower oscillation, high rotor
-  speed, pitch run-away, converter faults), not wear. Should we evaluate on all of
-  them, only on fault types a temperature sensor could plausibly see, or report
-  recall per fault type? Notebook 2 found no pre-failure bearing signal before the
-  four longest outages of 2017.
-- 2017 has no long outage that looks like a worn component. If we want a real
-  bearing or gearbox failure to test on, we may need another year from the same
-  Zenodo page.
 
 ## Noted while exploring
 
@@ -137,8 +103,3 @@ Heavy tails are a closer stand-in for what a KDE or autoencoder produces.
 in February, so its baseline standard deviation is near zero and the scaled values
 reach 140. Fine for reading the shape of a plot, useless as a detector. Whatever we
 use for scaling in notebook 2 needs to handle a near-constant baseline.
-
-**"Overload generator fan" outages look like a service round.** All ten happen on
-weekday mornings, and in January–March they move through turbines 1, 2, 3, 4, 5 in
-turn. Probably technicians testing the fans, not faults. Not confirmed; worth
-checking before we count them as failures.
