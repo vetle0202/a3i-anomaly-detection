@@ -359,3 +359,40 @@ warning they bought with it, rather than each at its own cost minimum.
 
 Scores kept at `results/metropt_scores_1h.csv` so the comparison can be rerun, even
 though we are not using them.
+
+## Autoencoder: tried, KDE kept
+
+Code in notebook 8. Same data, training period and scaling as notebook 4.
+
+**Network 7 → 6 → 4 → 3 → 4 → 6 → 7, 186 weights.** Three dense layers in, three
+out, ReLU in the hidden layers, linear bottleneck and output (they stand for scaled
+readings, which can be negative). Score = mean squared reconstruction error per row.
+Small on purpose, so every layer can be explained.
+
+**Bottleneck of 3.** TP3 and Reservoirs are the same signal (correlation 1.00), TP2
+and H1 mirror each other (−0.97), so seven sensors carry far fewer than seven
+numbers' worth. Three directions describe 93 % of February–March, four 99 %, two
+87 %. Three rebuilds normal operation without being able to copy everything,
+including a leak. Rejected: 4 (almost no room left to fail), 2 (loses too much of
+normal operation).
+
+**30 epochs, batch 64, Adam, not tuned.** Validation loss still falls slightly at
+30; a separate 100-epoch run levelled off by 50 and changed no result. Three seeds
+give identical shares of each failure above the 99th percentile of normal.
+
+**Result: the same detector by another route.** 99 / 14 / 83 / 0 % of F1–F4 above
+the line, exactly as the KDE. At the same budget of 22 false alarms: same F2 and F3,
+F4 not caught (the KDE's catch was chance anyway), and F1 warned 37.5 h ahead
+instead of 20 minutes late. That F1 warning is one alarm scoring 3.78 against a
+threshold of 3.42, gone at 4, and a random alarm lands in a 3-day window 0.43 times
+at this rate, so we do not count it. It does come back with 100 epochs, so it is
+worth a second look if there is time.
+
+**Why we keep the KDE.** Same job, one parameter, no random seed. Together with
+notebook 7 this says the limits are in the data, not the model: F2 and F4 do not
+show in these sensors, and F1 only once it has started.
+
+**What the autoencoder adds: per-sensor error.** F1 and F3 are DV_pressure (squared
+error 50–70 against 0.02 normally). And in ordinary operation from April the
+largest error by far is oil temperature, which follows the summer: much of the
+everyday score is season, not machine. This applies to the KDE too.
