@@ -61,6 +61,11 @@ sit at 70–75 °C under load and fall towards outdoor temperature at standstill
 raw temperature mostly tells us how windy it was. Whatever detector we build needs
 power (and probably wind speed) as an input alongside temperature.
 
+**In notebook 2, "before an outage" means the 24 hours before it.** An exploration
+choice: long enough to show a temperature building up over a shift or more, short
+enough that the points belong to that one outage and not to the previous one. The
+detector in notebook 5 uses 2 days instead, to match `lead=`.
+
 ## Alarms, evaluation and cost
 
 Code in `util/evaluation.py`, demonstrated in notebook 3.
@@ -144,7 +149,9 @@ use for scaling in notebook 2 needs to handle a near-constant baseline.
 **"Overload generator fan" outages look like a service round.** All ten happen on
 weekday mornings, and in January–March they move through turbines 1, 2, 3, 4, 5 in
 turn. Probably technicians testing the fans, not faults. Not confirmed; worth
-checking before we count them as failures.
+checking before we count them as failures. Notebook 5 shows the 17 August overload on turbine 1
+is different: the generator bearing runs about 15 °C hot for a day afterwards, so
+that one looks like a real fault.
 
 ## The MetroPT detector
 
@@ -181,6 +188,84 @@ plateau seen in notebook 1; F4 never does, also matching notebook 1. But the 99t
 percentile of normal is 112 against a median of 130 inside failures, so normal
 operation regularly scores as high as a leak. The project's real question is
 therefore the threshold, not the model.
+
+## The Kelmarsh detector
+
+Code in notebook 5. Same recipe as notebook 4 so the two are comparable.
+
+**Five sensors: three bearing temperatures plus power and wind speed.** Notebook 2
+found bearing temperature mostly tracks load. With power and wind as inputs the KDE
+learns which temperature is normal for a given load, so a high score means a
+temperature that does not fit the power. Rejected: temperatures alone, which would
+mostly flag windy days.
+
+**Train on 22 April – 3 June 2017, the same period for all six turbines.** The
+longest stretch with no forced outage on any turbine runs to 5 June. We stop two
+days early so that the two-day warning window before turbine 2's outage on 6 June
+is not inside the training data; otherwise the model is taught that exactly the rows
+we test for warnings are normal. About 6 200 rows per turbine. One period for all
+is one rule to explain. No sensor is near-constant in it, so the scaling
+problem from notebook 4 does not arise; the generator bearing has the smallest
+spread relative to the year (2.9 °C against 4.1 °C), because it follows the season.
+Rejected: each turbine's own longest outage-free stretch (six different periods to
+defend), and the whole year minus the outages (scores the model's own training data
+and mixes in whatever happens around unlabelled stops).
+
+**The cost of that choice:** the model has never seen winter or a storm (maximum wind
+in training is about 13 m/s). Cold months and strong wind score high regardless of
+turbine health. Training on more of the year would reduce this and is the first
+thing to try if the Kelmarsh false alarms matter.
+
+**One model per turbine, bandwidth 0.5, 5000-row sample.** Bandwidth chosen to match
+notebook 4, not tuned: 0.1, 0.5 and 2.0 give 10 %, 10 % and 7 % of pre-outage rows
+above the 99th percentile of normal on turbine 1.
+
+**Drop rows with any missing sensor (`dropna`), as in notebook 4.** `KernelDensity`
+cannot score a row with a gap in it. The gaps are whole rows (1.2 % of the year,
+times when the turbine logged nothing at all), so there is nothing to fill in from
+the other sensors. Rejected: interpolating, which would invent readings for periods
+when we do not know what the turbine was doing.
+
+**The 99th percentile of normal operation as the reference line.** Taken from
+notebook 4 so the two datasets are measured the same way. By definition 1 % of
+normal rows lie above it, which makes "how many rows before an outage are above it"
+easy to read: anything near 1 % means no difference. It is a yardstick for comparing,
+not the alarm threshold; notebook 6 chooses that from cost.
+
+**A turbine counts as "already stopped" below 10 kW (`STOPPED_KW`).** A stopped
+turbine draws a little power for its own systems: during long outages on turbine 1
+the reading is between −4.6 and −0.1 kW. Only 1.2 % of all rows fall between 0 and
+10 kW, so the threshold separates stopped from running with a margin, and moving it
+a few kW either way would change almost nothing.
+
+**"Wind beyond training" means stronger than the strongest wind in the training
+period**, per turbine (12.3–13.7 m/s). It is the simplest definition of "a condition
+the model has never seen". Rejected: a fixed storm threshold such as 15 m/s, which
+would be a second number to defend.
+
+**Evaluate "before" and "during" separately.** During an outage power is zero while
+the wind blows, so the score is high (42–88 % of rows above the line). That is the
+model seeing the stop, which the status log already reports. "Before" is the two
+days leading up to an outage, the same as `lead=` in `util/evaluation.py`.
+
+**Compare "before" against normal rows in the same month.** Outages cluster in
+January and February, when the score is high anyway because of the cold. Comparing
+against the whole year would credit the detector with a warning that is really
+winter.
+
+**What the detector achieves: no early warning.** Turbines 4–6 are at or near the
+same-month baseline before outages. Turbines 1–3 are above it, explained by the
+turbine already standing still after an earlier stop, by storm wind beyond the
+training range, and on turbine 1 by the hot generator bearing *after* the August fan
+fault. The detector does catch a temperature that does not fit the load when one
+happens (17 August, and more weakly after the farm-wide remote stop on 23 October),
+but both times after the stop, not before it. Most forced outages are
+instantaneous protective stops with nothing to precede them, so this is the expected
+result, not a broken model.
+
+**Every restart after a long stop scores high, whatever the cause.** The tallest
+spike on turbine 1 is a 26-hour grid loss on 11 February, which IEC does not count as
+a forced outage. Notebook 6 will count these as false alarms.
 
 ## Results
 
