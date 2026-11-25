@@ -1,5 +1,5 @@
 data/
 .ipynb_checkpoints/
 __pycache__/
-figures/
 .venv/
+Presentation.pptx
