@@ -61,6 +61,11 @@ sit at 70–75 °C under load and fall towards outdoor temperature at standstill
 raw temperature mostly tells us how windy it was. Whatever detector we build needs
 power (and probably wind speed) as an input alongside temperature.
 
+**In notebook 2, "before an outage" means the 24 hours before it.** An exploration
+choice: long enough to show a temperature building up over a shift or more, short
+enough that the points belong to that one outage and not to the previous one. The
+detector in notebook 5 uses 2 days instead, to match `lead=`.
+
 ## Alarms, evaluation and cost
 
 Code in `util/evaluation.py`, demonstrated in notebook 3.
@@ -214,6 +219,29 @@ thing to try if the Kelmarsh false alarms matter.
 **One model per turbine, bandwidth 0.5, 5000-row sample.** Bandwidth chosen to match
 notebook 4, not tuned: 0.1, 0.5 and 2.0 give 10 %, 10 % and 7 % of pre-outage rows
 above the 99th percentile of normal on turbine 1.
+
+**Drop rows with any missing sensor (`dropna`), as in notebook 4.** `KernelDensity`
+cannot score a row with a gap in it. The gaps are whole rows (1.2 % of the year,
+times when the turbine logged nothing at all), so there is nothing to fill in from
+the other sensors. Rejected: interpolating, which would invent readings for periods
+when we do not know what the turbine was doing.
+
+**The 99th percentile of normal operation as the reference line.** Taken from
+notebook 4 so the two datasets are measured the same way. By definition 1 % of
+normal rows lie above it, which makes "how many rows before an outage are above it"
+easy to read: anything near 1 % means no difference. It is a yardstick for comparing,
+not the alarm threshold; notebook 6 chooses that from cost.
+
+**A turbine counts as "already stopped" below 10 kW (`STOPPED_KW`).** A stopped
+turbine draws a little power for its own systems: during long outages on turbine 1
+the reading is between −4.6 and −0.1 kW. Only 1.2 % of all rows fall between 0 and
+10 kW, so the threshold separates stopped from running with a margin, and moving it
+a few kW either way would change almost nothing.
+
+**"Wind beyond training" means stronger than the strongest wind in the training
+period**, per turbine (12.3–13.7 m/s). It is the simplest definition of "a condition
+the model has never seen". Rejected: a fixed storm threshold such as 15 m/s, which
+would be a second number to defend.
 
 **Evaluate "before" and "during" separately.** During an outage power is zero while
 the wind blows, so the score is high (42–88 % of rows above the line). That is the
