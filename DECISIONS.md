@@ -80,6 +80,9 @@ synthetic series in notebook 3, the chosen threshold is the same for any ratio f
 the weakest failure go, because catching it costs 7 extra false alarms). So the claim we have to defend is "a missed
 failure costs more than a handful of inspections", which is easy, not "exactly 20",
 which is not. Re-run the sensitivity plot on real scores before trusting this.
+**Re-run in notebook 6: it does not hold on MetroPT.** There the step sits at
+1 : 15, just below our 1 : 20, and the threshold flips between about 155 and 61.
+The step is entirely about F4. See "Results" below for how we handle that.
 
 **Merge alarms with a 6-hour refractory period.** After an alarm, further crossings
 within 6 hours are the same event. Otherwise one sustained excursion at 10-minute
@@ -178,3 +181,43 @@ plateau seen in notebook 1; F4 never does, also matching notebook 1. But the 99t
 percentile of normal is 112 against a median of 130 inside failures, so normal
 operation regularly scores as high as a leak. The project's real question is
 therefore the threshold, not the model.
+
+## Results
+
+Code in notebook 6.
+
+**Failure windows end at 23:50, not at the date.** Notebooks 1 and 4 write F1 as
+`('2020-04-18', '2020-04-18')`. That works for slicing, but `evaluate()` turns it
+into a `Timestamp`, so the end becomes midnight and F1 lasts zero minutes. We write
+the end as the last 10-minute row of the day.
+
+**Evaluate MetroPT from 1 April.** The KDE was fitted on February and March, so
+scoring those rows is in-sample. Leaving them out removes one false alarm and
+changes no conclusion, but it is the honest way to report.
+
+**The uneven time series is fine for evaluation.** 25 521 of 30 696 rows survive,
+with 29 gaps longer than 6 hours. `util/evaluation.py` compares timestamps, never
+row numbers, so gaps do not break the refractory period or the lead window. We
+checked that no failure is hidden: F1 and F4 have all their rows, F2 270 of 288,
+F3 348 of 432.
+
+**Threshold grid: whole numbers from 5 to 350.** That covers the full range of the
+scores, and a step of 1 is finer than any difference that changes a count by more
+than one alarm. Rejected: quantile-spaced thresholds, which are harder to read off
+a plot.
+
+**MetroPT threshold: 110, not the cost minimum of 61.** At 1 : 20 the minimum is 61
+(4 of 4 caught, 22 false alarms), but it catches F4 with a single alarm 22 hours
+early and nothing inside F4's own window. At one false alarm per 7 days, a random
+alarm lands in F4's 3-day window 0.43 times on average, so that detection is
+indistinguishable from luck. With F4 set aside, the cheapest threshold is 155
+(3 caught, 7 false alarms), but there no failure is warned about in advance. F3's
+day and a half of warning rests on one alarm that scores 115. Following our "err low"
+rule, 110 keeps that warning for 5 more false alarms: 3 caught, 12 false alarms in
+153 days. Rejected: 61 (pays for a coin-flip), 155 (cheapest, but useless as a
+warning).
+
+**False alarms are an upper bound.** Half of the 22 at threshold 61 fall in 13–23 May,
+the unreported excursion (including the highest score in the series, 350). Most of
+the rest come in the days just after F1–F3 end. A technician may well have found
+something on those.
