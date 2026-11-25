@@ -19,7 +19,9 @@ pres.layout = 'LAYOUT_WIDE';            // 13.33 x 7.5
 pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
 pres.author = 'Vetle Svendsen, Christian Sommer, Sivert Rommetveit';
 pres.title = 'Catching a leak before it stops the train';
-const C = pres.SchemeColor;
+// Colours straight from THEME, so this script has no dependencies beyond pptxgenjs.
+const C = { background1: THEME.colors.lt1, background2: THEME.colors.lt2,
+            text1: THEME.colors.dk1, text2: THEME.colors.dk2 };
 
 // ---------------------------------------------------------------- layouts
 
@@ -218,6 +220,5 @@ s.addNotes('Honest summary. Success at solving the problem is not a grading crit
 (async () => {
   const out = 'Presentation.pptx';
   await pres.writeFile({ fileName: out });
-  await applyTheme(out, THEME);
   console.log('wrote', out);
 })();
