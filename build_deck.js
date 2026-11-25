@@ -39,7 +39,7 @@ pres.defineSlideMaster({
   background: { color: C.background1 },
   objects: [
     { placeholder: { options: { name: 'title', type: 'title', x: 0.75, y: 0.55, w: 11.8, h: 0.85,
-        fontSize: 32, bold: true, color: C.text1, valign: 'middle', align: 'left' }, text: '' } },
+        fontSize: 32, bold: true, color: C.text1, valign: 'middle', align: 'left', margin: 0 }, text: '' } },
     { placeholder: { options: { name: 'body', type: 'body', x: 0.75, y: 1.6, w: 11.8, h: 5.2,
         fontSize: 16, color: C.text2, valign: 'top' }, text: '' } },
   ],
@@ -51,7 +51,7 @@ pres.defineSlideMaster({
   background: { color: C.background1 },
   objects: [
     { placeholder: { options: { name: 'title', type: 'title', x: 0.75, y: 0.45, w: 11.8, h: 0.8,
-        fontSize: 32, bold: true, color: C.text1, valign: 'middle', align: 'left' }, text: '' } },
+        fontSize: 32, bold: true, color: C.text1, valign: 'middle', align: 'left', margin: 0 }, text: '' } },
     { placeholder: { options: { name: 'body', type: 'body', x: 0.75, y: 1.25, w: 11.8, h: 0.55,
         fontSize: 15, color: THEME.colors.accent6, valign: 'top' }, text: '' } },
   ],
@@ -160,7 +160,7 @@ s.addText('The cost model counts a detection the same whether it arrives a day e
 s.addNotes('This is the slide to slow down on. The cost minimum is 61, catching everything for 22 false alarms. But at 61 we learn about F1 eighteen minutes after it has started, which is worth nothing to a maintenance planner. We moved the threshold up to 110 deliberately.');
 
 s = pres.addSlide({ masterName: 'CONTENT', sectionTitle: 'MetroPT' });
-s.addText('We tried the obvious fix, and it bought nothing', { placeholder: 'title' });
+s.addText('Two obvious fixes, neither of them helped', { placeholder: 'title' });
 s.addText('If the detector is late because single readings are noisy, averaging over an hour should help. We gave both versions the same false alarm budget, so neither could win by crying wolf more often.',
   { x: 0.75, y: 1.5, w: 11.8, h: 0.6, isTextBox: true, margin: 0, fontSize: 16, color: C.text2 });
 s.addTable([
@@ -178,39 +178,39 @@ s.addText('Averaging six readings would have fixed a noise problem. It did not, 
   { x: 8.3, y: 3.1, w: 4.3, h: 2.2, isTextBox: true, margin: 0, fontSize: 14, color: C.text2 });
 s.addShape(pres.ShapeType.roundRect, { x: 0.75, y: 5.55, w: 11.8, h: 1.1, rectRadius: 0.06,
   fill: { color: C.background2 }, line: { color: 'E2E8F0', width: 1 }, objectName: 'takeaway' });
-s.addText('Both versions were given the same number of false alarms, so neither could look better simply by alarming more often. On that footing the hour-long average changes nothing we would act on.',
+s.addText('We also swapped the density model for a small autoencoder — 186 weights, same data, same training period, three seeds. It puts the same share of each failure above the line as the KDE. A different model does not help either, for the same reason: the information is not in the sensors.',
   { x: 1.1, y: 5.78, w: 11.1, h: 0.7, isTextBox: true, margin: 0, fontSize: 15, color: C.text2 });
 s.addNotes('A negative result we kept rather than hid. It also answers the obvious question: why only one real warning out of four.');
 
 pres.addSection({ title: 'Kelmarsh' });
 s = pres.addSlide({ masterName: 'CONTENT', sectionTitle: 'Kelmarsh' });
-s.addText('The wind turbines: same method, no warning', { placeholder: 'title' });
-s.addText('The recipe from MetroPT ran unchanged. With power and wind speed as inputs, the model learns what temperature is normal for the load, so a high score means a temperature that does not fit how hard the turbine is working.',
+s.addText('The turbines looked like a success', { placeholder: 'title' });
+s.addText('Same recipe, unchanged. On paper it beat MetroPT: 122 of the 141 unplanned outages flagged, most of them hours in advance. We had predicted the opposite, so we went looking for the catch.',
   { x: 0.75, y: 1.5, w: 11.8, h: 0.6, isTextBox: true, margin: 0, fontSize: 16, color: C.text2 });
-card(s, 0.75, 2.3, 5.6, 2.95, 'What the numbers say', [
-  'Before an outage the score is high 2 to 12 % of the time, against 2 to 5 % expected from the month alone',
-  'During an outage it is high 42 to 88 % of the time, which only repeats what the status log already told us',
-  'Of the high readings before an outage, 36 to 68 % come from a turbine that had already stopped',
-], 'card-numbers');
-card(s, 6.95, 2.3, 5.6, 2.95, 'Why, and we said so in advance', [
-  'Most unplanned outages are protective stops: tower oscillation, rotor overspeed, converter and pitch faults',
-  'They trip within seconds of a gust or an electrical fault crossing a limit',
-  'Nothing slow happens for a temperature sensor to notice',
-], 'card-why');
-s.addText('It did catch the one fault that developed slowly: a generator bearing running hot after a fan failure in August.',
+card(s, 0.75, 2.3, 5.6, 2.95, 'Three checks, and almost nothing survived', [
+  'Against chance: shifting the alarms to random times still "catches" about 18',
+  'Against clustering: outages arrive in bursts, so one alarm is credited with several. Only 50 of the 141 are isolated',
+  'Against conditions: of the 28 isolated outages with an alarm before them, 27 were a storm or a turbine already standing still',
+], 'card-checks');
+card(s, 6.95, 2.3, 5.6, 2.95, 'What the detector was really seeing', [
+  'It flags anything outside its training period, and six spring weeks contain no winter and no storm',
+  'Storms cause trips, so reacting to storms looks exactly like predicting failures',
+  'Most outages are protective trips anyway: they fire within seconds, with no run-up to detect',
+], 'card-seeing');
+s.addText('One outage out of 141 had an early alarm we could not explain away.',
   { x: 0.75, y: 5.55, w: 11.8, h: 0.5, isTextBox: true, margin: 0, fontSize: 16, italic: true, color: THEME.colors.accent1 });
-s.addNotes('This is the comparison the whole project was built for. The detector is not broken here: it is looking for something that is not present. The one exception, the August bearing fault, is the case that actually fits what the method is for.');
+s.addNotes('Be honest here: our hypothesis was that lead times would be near zero, and they were not. The raw numbers looked better than MetroPT. It took three separate checks to show the detector was reacting to weather rather than wear. That is the most useful thing we learned.\n\nIf asked whether it ever worked on the turbines: yes, once. Notebook 5 has the plot — turbine 1 in August, the generator bearing running hot after a fan failure, with the score climbing as the temperature leaves what the load would explain. That is the one fault of the kind the method is built for, and it found it.');
 
 pres.addSection({ title: 'Conclusion' });
 s = pres.addSlide({ masterName: 'DARK', sectionTitle: 'Conclusion' });
 s.addText('When is this the right tool?', { placeholder: 'title' });
 s.addText([
-  { text: 'Density estimation finds faults that develop. It cannot find faults that simply happen.', options: { breakLine: true, fontSize: 19, color: 'FFFFFF' } },
-  { text: 'A leak that builds over an afternoon leaves a trace in the sensors hours ahead. A protection system tripping does not, and no amount of modelling recovers a signal that was never recorded. Before building a detector, ask which kind of failure you have.', options: { fontSize: 15 } },
+  { text: 'This works on faults that develop. On faults that simply happen, it only looks like it works.', options: { breakLine: true, fontSize: 19, color: 'FFFFFF' } },
+  { text: 'A leak building over an afternoon leaves a trace hours ahead. A protection trip does not, and no model recovers a signal that was never recorded. The harder lesson is that the wind turbines scored 87 % recall anyway, because the detector had learned spring and was reacting to winter. Check a detection count against chance before you believe it.', options: { fontSize: 15 } },
 ], { placeholder: 'body' });
 stat(s, 1.0, 5.55, '1 of 4', 'leaks caught with real warning', 3.5, THEME.colors.accent3, 'CBD5E0');
-stat(s, 5.0, 5.55, '0 of 141', 'turbine outages caught in advance', 3.5, THEME.colors.accent3, 'CBD5E0');
-stat(s, 9.0, 5.55, '1 per week', 'false alarms at our threshold', 3.3, THEME.colors.accent3, 'CBD5E0');
+stat(s, 5.0, 5.55, '87 %', 'of turbine outages caught, on paper', 3.5, THEME.colors.accent3, 'CBD5E0');
+stat(s, 9.0, 5.55, '1 of 141', 'left after the three checks', 3.3, THEME.colors.accent3, 'CBD5E0');
 s.addNotes('Honest summary. Success at solving the problem is not a grading criterion; being able to say precisely why it did not work is.');
 
 // ---------------------------------------------------------------- write

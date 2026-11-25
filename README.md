@@ -18,20 +18,42 @@ enough data to evaluate it properly.
 | System | Air compressor on a Porto metro train | 6 wind turbines, Northamptonshire |
 | Period | Feb–Sep 2020 | 2016–2024 (we use 2017) |
 | Resolution | 0.1 Hz, aggregated to 10 min | 10 min |
-| Failure labels | None. 4 air leaks described in the documentation | Status log with IEC categories; 38 forced outages on one turbine in 2017 alone |
+| Failure labels | None. 4 air leaks described in the documentation | Status log with IEC categories; 141 forced outages across the farm in 2017 |
 
 ## Method
 
 Following lecture blocks 1 and 3:
 
-1. Aggregate to 10-minute windows and build sliding-window features.
+1. Aggregate to 10-minute windows.
 2. Model normal operation with kernel density estimation.
-3. Compare against an autoencoder.
+3. Compare against an autoencoder and against a sliding-window variant.
 4. Calibrate the alarm threshold against a cost model: false alarm vs missed failure.
 
 We use anomaly detection rather than classification because four failure events are
 far too few to learn what a failure looks like, while there is a great deal of normal
 operation to model.
+
+## What we found
+
+**MetroPT.** The detector separates the leaks that build up slowly. At the threshold
+we chose it catches three of the four, with a day and a half of warning before one of
+them and none before the other two — the sensors carry no trace of those until they
+begin. Neither a sliding window nor an autoencoder improves on that, which is how we
+know the limit is the data rather than the model. The price is a false alarm roughly
+once a week.
+
+**Kelmarsh.** On paper it does better: 122 of 141 outages flagged, most of them hours
+in advance. It does not survive scrutiny. Shifting the alarms to random times still
+"catches" about 18; outages arrive in bursts, so one alarm is credited with several,
+and only 50 of the 141 are isolated; and of the 28 isolated outages with an alarm
+before them, 27 happened during a storm or with the turbine already stopped. One is
+left.
+
+**The lesson.** The method suits faults that develop and move the sensors while they
+do. Most of these outages are protective trips that fire within seconds. What the
+detector had really learned was that six spring weeks contain no winter, and since
+storms cause trips, reacting to storms looks exactly like predicting failures. A
+detection count has to be checked against chance before it means anything.
 
 ## Getting the data
 
@@ -69,11 +91,25 @@ pip install -r requirements.txt
 ## Layout
 
 ```
-notebooks/   one notebook per stage
+notebooks/   one notebook per stage, run them in order
 util/        our own helper functions
-data/        datasets, not tracked
-DECISIONS.md why we chose what we chose — keep this current
+data/        the two archives, not tracked
+results/     anomaly scores, one file per detector
+figures/     plots exported from the notebooks
+DECISIONS.md why we chose what we chose
+build_deck.js  rebuilds the slides from figures/ (needs pptxgenjs)
 ```
+
+| Notebook | What it does |
+|---|---|
+| 1 | Look at the MetroPT data and the four reported leaks |
+| 2 | Look at the Kelmarsh SCADA and build the outage labels |
+| 3 | The alarm and cost machinery, on synthetic scores |
+| 4 | KDE detector on MetroPT |
+| 5 | The same detector on Kelmarsh |
+| 6 | Thresholds, costs and the comparison — **read this one for the results** |
+| 7 | Does a sliding window help? No |
+| 8 | Does an autoencoder help? Also no |
 
 ## DECISIONS.md
 
