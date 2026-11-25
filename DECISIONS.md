@@ -221,3 +221,26 @@ warning).
 the unreported excursion (including the highest score in the series, 350). Most of
 the rest come in the days just after F1–F3 end. A technician may well have found
 something on those.
+
+## Sliding window: tried and rejected
+
+Code in notebook 7.
+
+**A one-hour mean does not improve the detector, so we keep the per-reading version
+from notebook 4.** Compared at the same false alarm budget (about twenty over
+April–September), averaging the last hour changes the warning time by less than half
+an hour on every failure both detectors find. It additionally fires inside F4, but
+notebook 6 showed a detection of F4 is consistent with chance, so we do not count it.
+
+**What that tells us.** If the detector were late on F1 and F2 because single
+readings are noisy, averaging six of them would have helped. It did not. So the
+lateness is not a filtering problem: the sensors carry no sign of F1 and F2 before
+they start. That is a property of the machine and its instrumentation, not of the
+method, and it is the honest answer to why we only get real warning on F3.
+
+**Compared fairly, on purpose.** Any detector looks better if it is allowed to alarm
+more often, so the two were given the same false alarm budget and judged on the
+warning they bought with it, rather than each at its own cost minimum.
+
+Scores kept at `results/metropt_scores_1h.csv` so the comparison can be rerun, even
+though we are not using them.
