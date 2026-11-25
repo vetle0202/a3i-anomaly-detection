@@ -307,6 +307,36 @@ the unreported excursion (including the highest score in the series, 350). Most 
 the rest come in the days just after F1–F3 end. A technician may well have found
 something on those.
 
+**Kelmarsh: one threshold for the whole farm, counts added over six turbines.** All
+six models use the same recipe and bandwidth, and their scores sit on the same scale
+(median 4.3–4.5). One number is one rule. Rejected: a threshold per turbine, six
+numbers to defend for no reason we could name. The training period (22 April –
+3 June) is left out of the evaluation, as February and March are on MetroPT.
+
+**Kelmarsh threshold: 16, the cost minimum.** 122 of 141 outages "detected" for
+137 false alarms, one per turbine every 14 days. Stable from 1 : 9 to 1 : 53, so
+unlike MetroPT the ratio does not decide it.
+
+**Checked against chance by shifting the alarms.** Move every alarm on a turbine by
+the same random amount of time (wrapping round), 200 times, and count detections.
+Keeps the number and spacing of alarms, removes any link to the outages. Chosen over
+the F4 calculation because with 141 overlapping windows a formula gets complicated
+and a shuffle is easy to explain. Chance gives about 18 of the 122.
+
+**Judge warnings on isolated outages only, alarms before the start only.** 91 of
+141 outages follow another on the same turbine within 2 days, so the restart after
+one counts as "warning" of the next. On the 50 isolated outages, 28 have an alarm
+before they start (about 6 by chance). 17 of those are in wind beyond the training
+range, 10 with the turbine already stopped, and the last is a grid event. So the
+real finding is no warning of a developing fault, which agrees with notebook 5.
+Rejected: reporting the 87 % raw recall, which is true and misleading.
+
+**The 1 : 20 ratio does not fit Kelmarsh, and we say so rather than change it.**
+It was set for a leak that takes a train out of service. A median forced outage on
+Kelmarsh lasts 12 minutes and resets itself. We keep 1 : 20 so both datasets go
+through the same steps, and note that a ratio near 1 : 1 would choose a threshold
+of about 59, almost no alarms.
+
 ## Sliding window: tried and rejected
 
 Code in notebook 7.
