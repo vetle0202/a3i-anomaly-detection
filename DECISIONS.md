@@ -307,6 +307,36 @@ the unreported excursion (including the highest score in the series, 350). Most 
 the rest come in the days just after F1–F3 end. A technician may well have found
 something on those.
 
+**Kelmarsh: one threshold for the whole farm, counts added over six turbines.** All
+six models use the same recipe and bandwidth, and their scores sit on the same scale
+(median 4.3–4.5). One number is one rule. Rejected: a threshold per turbine, six
+numbers to defend for no reason we could name. The training period (22 April –
+3 June) is left out of the evaluation, as February and March are on MetroPT.
+
+**Kelmarsh threshold: 16, the cost minimum.** 122 of 141 outages "detected" for
+137 false alarms, one per turbine every 14 days. Stable from 1 : 9 to 1 : 53, so
+unlike MetroPT the ratio does not decide it.
+
+**Checked against chance by shifting the alarms.** Move every alarm on a turbine by
+the same random amount of time (wrapping round), 200 times, and count detections.
+Keeps the number and spacing of alarms, removes any link to the outages. Chosen over
+the F4 calculation because with 141 overlapping windows a formula gets complicated
+and a shuffle is easy to explain. Chance gives about 18 of the 122.
+
+**Judge warnings on isolated outages only, alarms before the start only.** 91 of
+141 outages follow another on the same turbine within 2 days, so the restart after
+one counts as "warning" of the next. On the 50 isolated outages, 28 have an alarm
+before they start (about 6 by chance). 17 of those are in wind beyond the training
+range, 10 with the turbine already stopped, and the last is a grid event. So the
+real finding is no warning of a developing fault, which agrees with notebook 5.
+Rejected: reporting the 87 % raw recall, which is true and misleading.
+
+**The 1 : 20 ratio does not fit Kelmarsh, and we say so rather than change it.**
+It was set for a leak that takes a train out of service. A median forced outage on
+Kelmarsh lasts 12 minutes and resets itself. We keep 1 : 20 so both datasets go
+through the same steps, and note that a ratio near 1 : 1 would choose a threshold
+of about 59, almost no alarms.
+
 ## Sliding window: tried and rejected
 
 Code in notebook 7.
@@ -329,3 +359,40 @@ warning they bought with it, rather than each at its own cost minimum.
 
 Scores kept at `results/metropt_scores_1h.csv` so the comparison can be rerun, even
 though we are not using them.
+
+## Autoencoder: tried, KDE kept
+
+Code in notebook 8. Same data, training period and scaling as notebook 4.
+
+**Network 7 → 6 → 4 → 3 → 4 → 6 → 7, 186 weights.** Three dense layers in, three
+out, ReLU in the hidden layers, linear bottleneck and output (they stand for scaled
+readings, which can be negative). Score = mean squared reconstruction error per row.
+Small on purpose, so every layer can be explained.
+
+**Bottleneck of 3.** TP3 and Reservoirs are the same signal (correlation 1.00), TP2
+and H1 mirror each other (−0.97), so seven sensors carry far fewer than seven
+numbers' worth. Three directions describe 93 % of February–March, four 99 %, two
+87 %. Three rebuilds normal operation without being able to copy everything,
+including a leak. Rejected: 4 (almost no room left to fail), 2 (loses too much of
+normal operation).
+
+**30 epochs, batch 64, Adam, not tuned.** Validation loss still falls slightly at
+30; a separate 100-epoch run levelled off by 50 and changed no result. Three seeds
+give identical shares of each failure above the 99th percentile of normal.
+
+**Result: the same detector by another route.** 99 / 14 / 83 / 0 % of F1–F4 above
+the line, exactly as the KDE. At the same budget of 22 false alarms: same F2 and F3,
+F4 not caught (the KDE's catch was chance anyway), and F1 warned 37.5 h ahead
+instead of 20 minutes late. That F1 warning is one alarm scoring 3.78 against a
+threshold of 3.42, gone at 4, and a random alarm lands in a 3-day window 0.43 times
+at this rate, so we do not count it. It does come back with 100 epochs, so it is
+worth a second look if there is time.
+
+**Why we keep the KDE.** Same job, one parameter, no random seed. Together with
+notebook 7 this says the limits are in the data, not the model: F2 and F4 do not
+show in these sensors, and F1 only once it has started.
+
+**What the autoencoder adds: per-sensor error.** F1 and F3 are DV_pressure (squared
+error 50–70 against 0.02 normally). And in ordinary operation from April the
+largest error by far is oil temperature, which follows the summer: much of the
+everyday score is season, not machine. This applies to the KDE too.
