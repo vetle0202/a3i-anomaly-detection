@@ -142,3 +142,39 @@ use for scaling in notebook 2 needs to handle a near-constant baseline.
 weekday mornings, and in January–March they move through turbines 1, 2, 3, 4, 5 in
 turn. Probably technicians testing the fans, not faults. Not confirmed; worth
 checking before we count them as failures.
+
+## The MetroPT detector
+
+Code in notebook 4.
+
+**Train on February and March, not February alone.** `DV_pressure` has a standard
+deviation of 0.0136 in February against 0.1271 once March is included, a factor of
+ten. `StandardScaler` divides by it, so training on February alone turns every later
+`DV_pressure` reading into a huge number and makes a seven-sensor model behave like a
+one-sensor model. February plus March is still entirely before the first reported
+failure. Rejected: February alone, and scaling by a robust spread, which would have
+been a second thing to explain for no gain.
+
+**The cost of that choice:** the early `DV_pressure` spikes in March are now part of
+what the model calls normal. If those spikes are early signs of the April leak, we
+have taught it to ignore the thing we want it to catch. Worth testing later by
+training on February alone with a robust scaler and seeing whether F1 scores higher.
+
+**Bandwidth 0.5, chosen for readability, not performance.** 0.1, 0.5 and 2.0 rank the
+four failures the same way; the separation between normal and failure moves from 1.18
+to 1.09 across the whole range. 0.1 puts the scores in the thousands and 2.0 squeezes
+them flat, so we take the middle. We should say plainly that this parameter did not
+matter rather than pretend it was tuned.
+
+**Score each 10-minute row on its own, no sliding window yet.** Simplest thing that
+produces a score, and it works. The weakness is that one odd reading counts the same
+as an hour of them, though only the second justifies sending a technician. Sivert's
+refractory period in `util/evaluation.py` partly compensates. A sliding window is the
+obvious next improvement if there is time.
+
+**What the detector actually achieves.** 99 % of F1 and 83 % of F3 score above the
+99th percentile of normal; F2 reaches it for 14 % of its labelled window, matching the
+plateau seen in notebook 1; F4 never does, also matching notebook 1. But the 99th
+percentile of normal is 112 against a median of 130 inside failures, so normal
+operation regularly scores as high as a leak. The project's real question is
+therefore the threshold, not the model.
